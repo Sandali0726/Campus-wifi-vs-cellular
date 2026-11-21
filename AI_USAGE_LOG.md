@@ -9,6 +9,7 @@ AI tools did **not** produce any measurement data; all data in `data/raw/` comes
 |---|---|---|---|---|
 | 2026-11-21 | Claude Code (Anthropic) | Read the brief + proposal and produce an implementation plan and issue list | `.github/issue-drafts/*` | Plan reviewed by the group; issues adopted as the work breakdown |
 | 2026-11-21 | Claude Code (Anthropic) | Repository skeleton | `README.md`, `.gitignore`, `AI_USAGE_LOG.md`, folder layout | Reviewed and approved by the group |
+| 2026-11-21 | Claude Code (Anthropic) | Probe server + self-test (issue 2) | `server/probe_server.py`, `server/self_test.py`, `server/README.md` | Pending group review |
 
 ## Borrowed code / external sources
 
