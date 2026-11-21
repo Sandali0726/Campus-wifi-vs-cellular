@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Run settings -->
+        <TextView style="@style/Label" android:text="Phone" />
+        <RadioGroup android:id="@+id/rgPhone" style="@style/Row">
+            <RadioButton android:id="@+id/rbPhoneA" android:text="A" android:checked="true" style="@style/Choice" />
+            <RadioButton android:id="@+id/rbPhoneB" android:text="B" style="@style/Choice" />
+        </RadioGroup>
+
+        <TextView style="@style/Label" android:text="Network role on this walk" />
+        <RadioGroup android:id="@+id/rgRole" style="@style/Row">
+            <RadioButton android:id="@+id/rbWifi" android:text="Wi-Fi" android:checked="true" style="@style/Choice" />
+            <RadioButton android:id="@+id/rbCell" android:text="Cellular" style="@style/Choice" />
+        </RadioGroup>
+
+        <TextView style="@style/Label" android:text="Time slot" />
+        <RadioGroup android:id="@+id/rgSlot" style="@style/Row">
+            <RadioButton android:id="@+id/rbOffpeak" android:text="Off-peak 8–9" android:checked="true" style="@style/Choice" />
+            <RadioButton android:id="@+id/rbPeak" android:text="Peak 12:30–13:30" style="@style/Choice" />
+        </RadioGroup>
+
+        <TextView style="@style/Label" android:text="Walk number (1–3)" />
+        <EditText
+            android:id="@+id/etWalk"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:text="1" />
+
+        <TextView style="@style/Label" android:text="Server URL (ngrok)" />
+        <EditText
+            android:id="@+id/etServer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="https://your-domain.ngrok-free.app"
+            android:inputType="textUri" />
+
+        <!-- Start / Stop -->
+        <LinearLayout style="@style/Row" android:layout_marginTop="12dp">
+            <Button android:id="@+id/btnStart" android:text="Start" style="@style/WideButton" />
+            <Button android:id="@+id/btnStop" android:text="Stop" android:enabled="false" style="@style/WideButton" />
+        </LinearLayout>
+
+        <!-- Waypoints -->
+        <TextView style="@style/Label" android:text="Waypoints (tap on arrival, wait 40 s)" />
+        <LinearLayout android:id="@+id/waypointRow" style="@style/Row">
+            <Button android:id="@+id/btnP1" android:text="P1" style="@style/WpButton" />
+            <Button android:id="@+id/btnP2" android:text="P2" style="@style/WpButton" />
+            <Button android:id="@+id/btnP3" android:text="P3" style="@style/WpButton" />
+            <Button android:id="@+id/btnP4" android:text="P4" style="@style/WpButton" />
+            <Button android:id="@+id/btnP5" android:text="P5" style="@style/WpButton" />
+        </LinearLayout>
+
+        <!-- Live status -->
+        <TextView
+            android:id="@+id/tvWaypoint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:text="Waypoint: –" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:textSize="13sp"
+            android:text="Not running" />
+
+        <Button
+            android:id="@+id/btnShare"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Share last CSV" />
+    </LinearLayout>
+</ScrollView>
