@@ -20,8 +20,8 @@ every waypoint tap (signal, network type, latency, 250 KB download speed, coarse
 | [`data/raw/`](data/raw/) | Raw CSVs pulled from the phones — never edited by hand |
 | [`data/field-notes/`](data/field-notes/) | Hand-written walk logs and validation sheets |
 | [`analysis/`](analysis/) | `analyse.py` — rebuilds every table and figure from `data/raw/` |
-| [`docs/`](docs/) | Field protocol and templates |
-| [`report/`](report/) | Final 3–4 page two-column report |
+| [`docs/`](docs/) | [Field protocol](docs/PROTOCOL.md) and [CSV data dictionary](docs/DATA_DICTIONARY.md) |
+| [`report/`](report/) | Final 3–4 page two-column report (LaTeX skeleton) and `make_package.sh` |
 | [`AI_USAGE_LOG.md`](AI_USAGE_LOG.md) | AI tools used, for what, and how the output was used |
 
 ## How to reproduce
@@ -31,6 +31,16 @@ every waypoint tap (signal, network type, latency, 250 KB download speed, coarse
 3. **Walks** — follow [`docs/PROTOCOL.md`](docs/PROTOCOL.md); copy CSVs into `data/raw/`.
 4. **Analysis** — `pip install -r analysis/requirements.txt && python analysis/analyse.py`
    → tables and figures in `analysis/output/`.
+
+## Status
+
+| Part | State |
+|---|---|
+| Probe server | done, tested locally |
+| Android app | done; builds, unit tests pass; **still to be tested on the Pixel phones** |
+| Analysis | done; tested on synthetic data only |
+| Data collection | to do (issue 11) |
+| Report | skeleton only (issue 12) |
 
 ## Project tracking
 

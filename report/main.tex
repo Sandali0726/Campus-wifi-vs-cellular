@@ -1,0 +1,67 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{graphicx,booktabs,hyperref}
+\graphicspath{{figures/}}
+
+\begin{document}
+\title{Measuring Wi-Fi and Cellular Performance Along a University Route}
+\author{\IEEEauthorblockN{K.K.S. Kapuruge (220301V) \quad W.S.S. Jayawardhana (220282K)}
+\IEEEauthorblockA{CS4473 Mobile Computing --- Group 11, Option F: Mobile Network Measurement}}
+\maketitle
+
+\begin{abstract}
+% 3-4 sentences: what we measured, how, the main finding (with one number), one limitation.
+\end{abstract}
+
+\section{Introduction}
+% Problem: network quality changes with place and time; mobile users move between Wi-Fi and cellular.
+% Why it matters for mobile computing: intermittent connectivity, variable signal quality.
+% Research question (from the proposal) and expectation.
+% At least two references, e.g. Android WifiInfo / TelephonyManager docs \cite{wifiinfo,telephony}.
+
+\section{Prototype and Method}
+\subsection{Prototype}
+% Block diagram (Fig.~\ref{fig:block}), APIs: WifiManager/WifiInfo via NetworkCallback, TelephonyManager,
+% LocationManager, ConnectivityManager.NetworkCallback, HttpURLConnection, foreground service (location).
+% Probe: 3 x /ping (median) + 256 000-byte download every 10 s and on waypoint taps; skip rule.
+% Server: laptop + fixed ngrok URL.
+\subsection{Experiment}
+% Route GTN Lab -> Library, P1-P5, 40 s pause. Factors: network (Wi-Fi/cellular) x time slot
+% (08:00-09:00 / 12:30-13:30). 3 walks per slot, both phones; role swap. Phones: 2 x Pixel 7 Pro,
+% Android 16, Mobitel. Held constant: ... Ground truth: waypoint taps, RSSI vs Settings, bytes vs server log.
+
+\section{Results}
+% Table~\ref{tab:points}: mean +- SD per point (from analysis/output/point_stats.md).
+% Fig.~\ref{fig:route}: latency / speed along the route.
+% Fig.~\ref{fig:scatter}: signal vs latency and speed, with r.
+% Drops per walk and where (drops.md). Peak vs off-peak. Did results match the expectation?
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_route_dl_mbps.png}
+\caption{Download speed at P1--P5 (mean $\pm$ SD over 3 walks).}
+\label{fig:route}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_scatter.png}
+\caption{Signal strength vs latency and download speed.}
+\label{fig:scatter}
+\end{figure}
+
+\section{Discussion}
+% Mobile computing challenges met and how we handled them: Android 16 Wi-Fi info redaction,
+% foreground-service rules, Doze, permissions, ngrok warning page, clock sync between phones.
+% Limitations: one route, one operator, n = 3 walks, ngrok detour adds latency, 250 KB file
+% underestimates throughput (TCP slow start), campus Wi-Fi load not controlled.
+
+\section{Contributions}
+% K.K.S. Kapuruge: ...
+% W.S.S. Jayawardhana: ...
+% AI use: see AI_USAGE_LOG.md in the data package.
+
+\begin{thebibliography}{9}
+\bibitem{wifiinfo} Android Developers, ``WifiInfo,'' \url{https://developer.android.com/reference/android/net/wifi/WifiInfo}.
+\bibitem{telephony} Android Developers, ``TelephonyManager,'' \url{https://developer.android.com/reference/android/telephony/TelephonyManager}.
+\end{thebibliography}
+\end{document}
