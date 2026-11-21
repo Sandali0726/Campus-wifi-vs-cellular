@@ -20,6 +20,7 @@ venv/
 
 # Generated analysis output (rebuilt by analysis/analyse.py)
 analysis/output/
+analysis/output_test/
 analysis/test_data/
 
 # Server runtime logs
