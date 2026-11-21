@@ -1,0 +1,32 @@
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.keystore
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Generated analysis output (rebuilt by analysis/analyse.py)
+analysis/output/
+analysis/output_test/
+analysis/test_data/
+
+# Server runtime logs
+server/logs/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
