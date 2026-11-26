@@ -19,6 +19,7 @@ import java.util.Locale
 class CsvLogger private constructor(val file: File) {
 
     private val writer = BufferedWriter(FileWriter(file, true))
+    private var closed = false
 
     init {
         if (file.length() == 0L) { writer.write(MeasurementRow.HEADER); writer.newLine(); writer.flush() }
@@ -26,13 +27,18 @@ class CsvLogger private constructor(val file: File) {
 
     @Synchronized
     fun append(row: MeasurementRow) {
+        if (closed) return
         writer.write(row.toCsvLine())
         writer.newLine()
         writer.flush()
     }
 
     @Synchronized
-    fun close() = runCatching { writer.close() }
+    fun close() {
+        if (closed) return
+        closed = true
+        runCatching { writer.close() }
+    }
 
     companion object {
         fun runsDir(ctx: Context): File =

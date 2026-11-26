@@ -28,8 +28,18 @@ class MeasurementRowTest {
     }
 
     @Test fun failedProbeKeepsError() {
-        val line = base.withProbe(ProbeResult(listOf(10.0), null, null, null, "ping2:SocketTimeoutException")).toCsvLine()
+        val line = base.withProbe(ProbeResult(listOf(10.0, null, 30.0), null, null, null, "ping2:SocketTimeoutException")).toCsvLine()
         assertTrue(line.contains(",FAILED,ping2:SocketTimeoutException,"))
+        assertTrue(line.contains(",10.00,,30.00,20.00,20.00,")) // ping1=10, ping2=empty, ping3=30, median=20, mean=20
+    }
+
+    @Test fun firstPingFailureDoesNotShiftColumns() {
+        val row = base.withProbe(ProbeResult(listOf(null, 25.0, 35.0), 256_000, 5.0, 100.0, "ping1:SocketTimeoutException"))
+        assertEquals(null, row.ping1Ms)
+        assertEquals(25.0, row.ping2Ms!!, 1e-9)
+        assertEquals(35.0, row.ping3Ms!!, 1e-9)
+        assertEquals(30.0, row.latencyMedianMs!!, 1e-9)
+        assertEquals(30.0, row.latencyMeanMs!!, 1e-9)
     }
 
     @Test fun escaping() {

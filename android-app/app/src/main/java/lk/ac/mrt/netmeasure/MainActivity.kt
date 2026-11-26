@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var btnStart: Button
     private lateinit var btnStop: Button
     private lateinit var waypointButtons: List<Button>
+    private lateinit var configControls: List<android.view.View>
     private lateinit var tvWaypoint: TextView
     private lateinit var tvStatus: TextView
 
@@ -61,6 +62,12 @@ class MainActivity : ComponentActivity() {
         tvStatus = findViewById(R.id.tvStatus)
         waypointButtons = listOf(R.id.btnP1, R.id.btnP2, R.id.btnP3, R.id.btnP4, R.id.btnP5)
             .map { findViewById(it) }
+        configControls = listOf(
+            R.id.rbPhoneA, R.id.rbPhoneB,
+            R.id.rbWifi, R.id.rbCell,
+            R.id.rbOffpeak, R.id.rbPeak,
+            R.id.etWalk, R.id.etServer,
+        ).map { findViewById(it) }
 
         restoreConfig(RunConfig.load(this))
 
@@ -127,6 +134,7 @@ class MainActivity : ComponentActivity() {
         btnStart.isEnabled = !s.running
         btnStop.isEnabled = s.running
         waypointButtons.forEach { it.isEnabled = s.running }
+        configControls.forEach { it.isEnabled = !s.running }
 
         tvWaypoint.text = if (s.waypoint == null) "Waypoint: –" else {
             val secs = (System.currentTimeMillis() - s.waypointTapEpochMs) / 1000

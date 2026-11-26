@@ -19,6 +19,7 @@ AI tools did **not** produce any measurement data; all data in `data/raw/` comes
 | 2026-11-21 | Claude Code (Anthropic) | Analysis script and synthetic test-data generator (issue 9) | `analysis/analyse.py`, `analysis/make_test_data.py`, `analysis/README.md` | Synthetic data used only to test the code, never in results |
 | 2026-11-21 | Claude Code (Anthropic) | Field protocol and templates (issue 10) | `docs/PROTOCOL.md`, `data/field-notes/*_template.md` | Route descriptions to be filled in by the group |
 | 2026-11-21 | Claude Code (Anthropic) | Report skeleton and packaging script (issue 12) | `report/main.tex`, `report/README.md`, `report/make_package.sh` | Text to be written by the group |
+| 2026-11-26 | Antigravity (Google DeepMind) | Audit codebase against assignment brief & proposal; fix 5 Android app edge-case bugs and add unit tests | `MeasurementService.kt`, `CsvLogger.kt`, `NetworkProbe.kt`, `NetworkMonitor.kt`, `MainActivity.kt`, `MeasurementRowTest.kt` | Applied on branch `kaveesha/fix-measurement-bugs`; pending on-device verification |
 
 ## Borrowed code / external sources
 

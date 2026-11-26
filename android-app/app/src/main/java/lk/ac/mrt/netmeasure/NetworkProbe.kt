@@ -8,15 +8,15 @@ import java.util.UUID
 
 /** Result of one probe: 3 latency pings + 1 download of the fixed 256 000-byte file. */
 data class ProbeResult(
-    val pingsMs: List<Double>,           // successful ping times, in order
+    val pingsMs: List<Double?>,          // 3 ping slots in order; null if that ping failed
     val dlBytes: Long?,                  // bytes received for /file
     val ttfbMs: Double?,                 // request start -> first body byte
     val dlTotalMs: Double?,              // request start -> last byte
     val error: String?,                  // first error, e.g. "ping2:SocketTimeoutException"
 ) {
     val ok: Boolean get() = error == null
-    val latencyMedianMs: Double? get() = ProbeMath.median(pingsMs)
-    val latencyMeanMs: Double? get() = ProbeMath.mean(pingsMs)
+    val latencyMedianMs: Double? get() = ProbeMath.median(pingsMs.filterNotNull())
+    val latencyMeanMs: Double? get() = ProbeMath.mean(pingsMs.filterNotNull())
     val dlMbps: Double? get() = if (dlBytes != null && dlTotalMs != null) ProbeMath.mbps(dlBytes, dlTotalMs) else null
 }
 
@@ -54,7 +54,7 @@ class NetworkProbe(private val baseUrl: String) {
     }
 
     fun run(): ProbeResult {
-        val pings = ArrayList<Double>(PINGS)
+        val pings = ArrayList<Double?>(PINGS)
         var error: String? = null
 
         for (i in 1..PINGS) {
@@ -65,6 +65,7 @@ class NetworkProbe(private val baseUrl: String) {
                 if (!body.contentEquals("pong".toByteArray())) throw IOException("bad ping body")
                 pings += (t1 - t0) / 1e6
             } catch (e: Exception) {
+                pings += null
                 if (error == null) error = "ping$i:${e.javaClass.simpleName}"
             }
         }

@@ -23,6 +23,7 @@ class NetworkMonitor(
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             val t = transportOf(cm.getNetworkCapabilities(network))
+            if (t != "NONE") transport = t
             onEvent("NET_AVAILABLE", t)
         }
 

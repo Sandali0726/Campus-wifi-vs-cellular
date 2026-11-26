@@ -46,6 +46,7 @@ class MeasurementService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var timerJob: Job? = null
+    private var probeJob: Job? = null
     private val probeBusy = AtomicBoolean(false)
 
     private var config: RunConfig? = null
@@ -119,8 +120,10 @@ class MeasurementService : Service() {
         if (timerJob == null) { stopSelf(); return }
         logEvent("RUN_STOP", "")
         timerJob?.cancel(); timerJob = null
+        probeJob?.cancel(); probeJob = null
+        probeBusy.set(false)
         netMonitor?.stop(); wifi?.stop(); cell?.stop(); location?.stop()
-        csv?.close()
+        csv?.close(); csv = null
         wakeLock?.let { if (it.isHeld) it.release() }
         MeasurementState.update { it.copy(running = false, waypoint = null) }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -150,7 +153,7 @@ class MeasurementService : Service() {
             MeasurementState.update { it.copy(skipped = it.skipped + 1) }
             return
         }
-        scope.launch {
+        probeJob = scope.launch {
             try {
                 val before = baseRow("PROBE", trigger) // signal + location at probe start
                 val r = probe!!.run()
@@ -160,6 +163,8 @@ class MeasurementService : Service() {
                     if (r.ok) it.copy(ok = it.ok + 1) else it.copy(failed = it.failed + 1)
                 }
                 updateNotification(row)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (t: Throwable) {
                 Log.e(TAG, "probe crashed", t)
                 write(baseRow("PROBE", trigger).copy(status = "FAILED", error = "crash:${t.javaClass.simpleName}"))
@@ -199,6 +204,7 @@ class MeasurementService : Service() {
             activeTransport = transport,
             wifiRssi = w?.rssi, wifiLinkMbps = w?.linkMbps, wifiFreqMhz = w?.freqMhz, wifiBssidHash = w?.bssidHash,
             cellDbm = c?.dbm, cellLevel = c?.level, cellRsrp = c?.rsrp, cellRsrq = c?.rsrq, cellSinr = c?.sinr,
+            cellNrRsrp = c?.nrRsrp,
             netType = c?.networkType, operator = c?.operator,
             lat = l?.lat, lon = l?.lon, locAccuracyM = l?.accuracyM, locAgeS = l?.ageS,
         )
