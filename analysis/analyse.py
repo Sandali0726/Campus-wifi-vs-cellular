@@ -84,23 +84,38 @@ def assign_locations(df: pd.DataFrame, window_s: float) -> pd.DataFrame:
     df = df.copy()
     df["location"] = ""
     df["at_point"] = False
-    df["t_since_p1_s"] = np.nan
+    df["t_since_start_s"] = np.nan
+    df["direction"] = ""
+    df["route_pos"] = np.nan  # 0 = P1 ... 4 = P5, so walks in either direction line up by place
     for run, g in df.groupby("run"):
-        taps = g[g["row_type"] == "WAYPOINT"][["epoch_ms", "waypoint"]].values.tolist()
-        p1 = next((t for t, w in taps if w == "P1"), g["epoch_ms"].min())
-        df.loc[g.index, "t_since_p1_s"] = (g["epoch_ms"] - p1) / 1000
+        taps = sorted(g[g["row_type"] == "WAYPOINT"][["epoch_ms", "waypoint"]].values.tolist())
+        t0 = taps[0][0] if taps else g["epoch_ms"].min()
+        df.loc[g.index, "t_since_start_s"] = (g["epoch_ms"] - t0) / 1000
+        # Walks may go either way (P1→P5 or P5→P1); the tap order says which.
+        df.loc[g.index, "direction"] = "reverse" if taps and taps[0][1] == POINTS[-1] else "forward"
         for idx, t in zip(g.index, g["epoch_ms"]):
-            last = [(tt, w) for tt, w in taps if tt <= t]
-            if not last:
+            k = sum(1 for tt, _ in taps if tt <= t)
+            if k == 0:
                 df.at[idx, "location"] = "start"
+                if taps:
+                    df.at[idx, "route_pos"] = POINTS.index(taps[0][1])
                 continue
-            tt, w = last[-1]
+            tt, w = taps[k - 1]
             if (t - tt) / 1000 <= window_s:
                 df.at[idx, "location"] = w
                 df.at[idx, "at_point"] = True
+                df.at[idx, "route_pos"] = POINTS.index(w)
             else:
-                nxt = POINTS[POINTS.index(w) + 1] if w in POINTS[:-1] else "end"
+                nxt = taps[k][1] if k < len(taps) else "end"
                 df.at[idx, "location"] = f"{w}→{nxt}"
+                if k < len(taps):
+                    # between points: place linearly from the end of the stop to the next tap
+                    t_from, t_to = tt + window_s * 1000, taps[k][0]
+                    f = min(max((t - t_from) / max(t_to - t_from, 1), 0), 1)
+                    a, b = POINTS.index(w), POINTS.index(nxt)
+                    df.at[idx, "route_pos"] = a + f * (b - a)
+                else:
+                    df.at[idx, "route_pos"] = POINTS.index(w)
     return df
 
 
@@ -123,6 +138,25 @@ def point_stats(df):
     agg = agg.reset_index()
     agg["n_walks"] = agg["latency_median_ms_count"]
     return per_walk, agg
+
+
+def availability(df):
+    """Share of probes that succeeded at each point (skipped probes excluded), summed over walks.
+    The mean ± SD tables use successful probes only, so this table shows where a network failed."""
+    p = df[(df["row_type"] == "PROBE") & df["at_point"] & (df["status"] != "SKIPPED")]
+    g = p.assign(ok=p["status"] == "OK").groupby(["net_role", "time_slot", "location"])["ok"]
+    t = pd.DataFrame({"ok": g.sum(), "n": g.size()}).reset_index()
+    lines = ["### Probe success at each point (OK / attempted, all walks)", "",
+             "| Network | Time slot | " + " | ".join(POINTS) + " |", "|---|---|" + "---|" * len(POINTS)]
+    for r in ROLES:
+        for s in SLOTS:
+            cells = []
+            for pt in POINTS:
+                row = t[(t.net_role == r) & (t.time_slot == s) & (t.location == pt)]
+                cells.append("–" if row.empty else
+                             f"{int(row.ok.iloc[0])}/{int(row.n.iloc[0])} ({100 * row.ok.iloc[0] / row.n.iloc[0]:.0f}%)")
+            lines.append(f"| {ROLE_LABEL[r]} | {s} | " + " | ".join(cells) + " |")
+    return t, "\n".join(lines) + "\n"
 
 
 def point_stats_md(agg):
@@ -170,7 +204,7 @@ def drops(df):
     fp = df[(df["row_type"] == "PROBE") & (df["status"] == "FAILED")].assign(event="PROBE_FAILED")
     d = pd.concat([ev, fp]).sort_values(["run", "epoch_ms"])
     d["kind"] = d["event"].map({"NET_LOST": "drop", "NOT_VALIDATED": "drop", "PROBE_FAILED": "drop"}).fillna("switch")
-    return d[["run", "phone_id", "net_role", "time_slot", "walk_id", "timestamp_iso", "t_since_p1_s",
+    return d[["run", "phone_id", "net_role", "time_slot", "walk_id", "timestamp_iso", "direction", "t_since_start_s",
               "location", "kind", "event", "error", "signal_dbm"]]
 
 
@@ -235,6 +269,12 @@ def fig_route(agg, per_walk, metric, out: Path):
             ax.errorbar(x + off, a[f"{metric}_mean"], yerr=a[f"{metric}_std"], color=COLOR[r], ls=LINESTYLE[s],
                         lw=2, marker=MARKER[s], ms=6, mec="white", mew=1.5, capsize=3,
                         label=f"{ROLE_LABEL[r]}, {SLOT_LABEL[s]}")
+            # flag means that rest on fewer walks than the others (the network failed there)
+            cnt = a[f"{metric}_count"]
+            for xi, (c, yv) in enumerate(zip(cnt, a[f"{metric}_mean"])):
+                if not pd.isna(yv) and c < agg[f"{metric}_count"].max():
+                    ax.annotate(f"n={int(c)}", (xi + off, yv), xytext=(6, 4), textcoords="offset points",
+                                fontsize=7, color=COLOR[r])
     ax.set_xticks(x, POINTS)
     style(ax, METRICS[metric], "Waypoint along the route (GTN Lab → Library)")
     ax.legend(fontsize=7, frameon=False, ncol=2, loc="upper center", bbox_to_anchor=(0.5, -0.2))
@@ -257,18 +297,17 @@ def fig_timeseries(df, out: Path):
             ax = axes[rr, c]
             for s in SLOTS:
                 for _, g in ok[(ok.net_role == r) & (ok.time_slot == s)].groupby("run"):
-                    ax.plot(g["t_since_p1_s"] / 60, g[m], color=COLOR[r], ls=LINESTYLE[s], lw=1, alpha=0.7,
+                    g = g.sort_values("epoch_ms")
+                    ax.plot(g["route_pos"], g[m], color=COLOR[r], ls=LINESTYLE[s], lw=1, alpha=0.7,
                             marker=".", ms=3)
-            # tap times of the first run as reference lines
-            taps = df[(df.net_role == r) & (df.row_type == "WAYPOINT")]
-            for p, t in taps.groupby("waypoint")["t_since_p1_s"].median().items():
-                ax.axvline(t / 60, color=GRID, lw=1, zorder=0)
-                if rr == 0:
-                    ax.text(t / 60, 1.02, p, transform=ax.get_xaxis_transform(), fontsize=7, color=INK2, ha="center")
+            for i, p in enumerate(POINTS):
+                ax.axvline(i, color=GRID, lw=1, zorder=0)
             ylabel = METRICS[m] if c == 0 else None
             if m == "signal_dbm":
                 ylabel = "Wi-Fi RSSI (dBm)" if r == "WIFI" else "Cellular signal (dBm)"
-            style(ax, ylabel, "Minutes since P1" if rr == 2 else None)
+            style(ax, ylabel, "Position along the route"
+                  if rr == 2 else None)
+            ax.set_xticks(range(len(POINTS)), POINTS)
             if rr == 0:
                 ax.set_title(ROLE_LABEL[r], fontsize=10, color=INK, loc="left", pad=14)
     handles = [plt.Line2D([], [], color=INK2, ls=LINESTYLE[s], label=SLOT_LABEL[s]) for s in SLOTS]
@@ -332,12 +371,14 @@ def main():
     corr = correlations(df)
     dr = drops(df)
     rs = run_summary(df, dr)
+    av, av_md = availability(df)
 
     per_walk.to_csv(a.out_dir / "walk_point_means.csv", index=False)
     agg.to_csv(a.out_dir / "point_stats.csv", index=False)
     corr.to_csv(a.out_dir / "correlations.csv", index=False)
     dr.to_csv(a.out_dir / "drops.csv", index=False)
     rs.to_csv(a.out_dir / "run_summary.csv", index=False)
+    av.to_csv(a.out_dir / "availability.csv", index=False)
 
     ps_md = point_stats_md(agg)
     corr_md = md_table(corr.rename(columns={"y": "versus"}), ".3f")
@@ -347,6 +388,7 @@ def main():
     rs_md = md_table(rs.drop(columns=["run"]), ".1f")
     hc_md = handset_check(df)
     (a.out_dir / "point_stats.md").write_text(ps_md)
+    (a.out_dir / "availability.md").write_text(av_md)
     (a.out_dir / "correlations.md").write_text(corr_md)
     (a.out_dir / "drops.md").write_text(drops_md)
     (a.out_dir / "run_summary.md").write_text(rs_md)
@@ -365,7 +407,7 @@ def main():
         f"Data: `{a.data_dir}` - {df.run.nunique()} runs, {(df.row_type == 'PROBE').sum()} probe rows. "
         f"A probe counts as *at a point* if it is within {a.window:.0f} s after that point's waypoint tap.",
         "", "## Runs", "", rs_md,
-        "## D3 - Mean ± SD per point (across walks)", "", ps_md,
+        "## D3 - Mean ± SD per point (across walks)", "", av_md, ps_md,
         "## D4 - Signal vs latency and speed", "", corr_md, "![scatter](fig_scatter.png)", "",
         "## D5 - Drops per walk, by location", "",
         md_table(per_run_drops) if len(per_run_drops) else "No drops recorded.\n",
